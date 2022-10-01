@@ -1,0 +1,31 @@
+﻿  Assembling music_player.asm...
+music_player.asm(1): error A2008: syntax error : .
+music_player.asm(2): error A2008: syntax error : .
+D:\masm32\include\windows.inc(9750): error A2008: syntax error : dword
+D:\masm32\include\windows.inc(10183): error A2008: syntax error : frame
+D:\masm32\include\windows.inc(16333): error A2008: syntax error : dword
+D:\masm32\include\windows.inc(18862): error A2008: syntax error : Frame
+D:\masm32\include\windows.inc(24749): error A2042: statement too complex
+need.inc(11): error A2008: syntax error : :
+music_player.asm(7): error A2008: syntax error : arg1
+music_player.asm(12): error A2008: syntax error : invoke
+music_player.asm(15): error A2008: syntax error : DialogBoxParamA
+music_player.asm(16): error A2008: syntax error : ExitProcess
+music_player.asm(21): error A2008: syntax error : if
+music_player.asm(22): error A2008: syntax error : invoke
+music_player.asm(23): error A2008: syntax error : SendMessageA
+music_player.asm(24): error A2008: syntax error : elseif
+music_player.asm(26): error A2008: syntax error : if
+music_player.asm(27): error A2008: syntax error : invoke
+music_player.asm(28): error A2008: syntax error : elseif
+music_player.asm(29): error A2008: syntax error : invoke
+music_player.asm(30): error A2008: syntax error : invoke
+music_player.asm(31): error A2008: syntax error : .
+music_player.asm(32): error A2008: syntax error : elseif
+music_player.asm(33): error A2008: syntax error : invoke
+music_player.asm(34): error A2008: syntax error : .
+music_player.asm(40): error A2008: syntax error : start
+music_player.asm(40): error A2088: END directive required at end of file
+music_player.asm(38): warning A6004: procedure argument or local not referenced : hWin
+music_player.asm(38): warning A6004: procedure argument or local not referenced : lParam
+D:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets(70,5): error MSB3721: 命令“ml64.exe /c /nologo /Zi /Fo"x64\Debug\music_player.obj" /I "D:\masm32\include" /W3 /errorReport:prompt  /Tamusic_player.asm”已退出，返回代码为 1。

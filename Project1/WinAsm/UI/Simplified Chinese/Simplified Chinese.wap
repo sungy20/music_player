@@ -1,0 +1,39 @@
+[PROJECT]
+Type=1
+ReleaseCommandLine=
+DebugCommandLine=
+AutoIncFileVersion=0
+RCSilent=0
+Make=0
+MakeEnv=0
+UseBatch=0
+AddIn=0
+Compiler=
+HOST=
+PellesTools=0
+ArcPVerUse=1
+ArcPVer=511
+ArcVerUse=1
+ArcVer=1
+
+[MAKE]
+ActiveBuild=0
+CompileRC=/v /c936
+RCToObj=
+Assemble=
+Link=/SUBSYSTEM:WINDOWS /RELEASE /VERSION:4.0 /NOENTRY /MACHINE:X86
+Out=..\Simplified Chinese.dll
+DebAssemble=
+DebLink=/SUBSYSTEM:WINDOWS /DEBUG /DEBUGTYPE:CV /VERSION:4.0 /INCREMENTAL:NO /NOENTRY /MACHINE:X86
+DebOut=..\Simplified Chinese.dll
+Make=
+MakeDeb=
+KeepBV=0
+AutoClean=1
+
+[SHOWFILE]
+3=2C0000003A000000BD020000EF01000000000000030000000000000018
+2=160000001D000000A7020000D2010000010000000100000000000000B1
+[FILES]
+1=Simplified Chinese.rc
+2=readme.txt

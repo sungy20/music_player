@@ -1,0 +1,3 @@
+﻿  Assembling music_player1.asm...
+need.inc(1): fatal error A1000: cannot open file : windows.inc
+D:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\BuildCustomizations\masm.targets(70,5): error MSB3721: 命令“ml.exe /c /nologo /Zi /Fo"Release\music_player1.obj" /W3 /errorReport:prompt  /Tamusic_player1.asm”已退出，返回代码为 1。

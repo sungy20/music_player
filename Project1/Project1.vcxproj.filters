@@ -18,6 +18,9 @@
     <None Include="need.inc">
       <Filter>头文件</Filter>
     </None>
+    <None Include="song.dat">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Media Include="src\trans.mp3">

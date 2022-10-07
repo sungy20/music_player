@@ -37,6 +37,7 @@ Song ends
 
 .const
 
+;控件大写，资源小写
 PRE_SONG		EQU 1028
 CON_PAUSE		EQU 1005
 NEXT_SONG		EQU 1027
@@ -70,13 +71,12 @@ temp EQU 1000
 .data
 
 	songMenuFilename BYTE "\\song.dat",0 ;歌单保存位置
-	FileName BYTE "trans.mp3",0
-	OPENMP3  BYTE  'open "%s" alias cursong type mpegvideo',0;打开歌曲命令
+	OPENMP3  BYTE  'open "%s" alias cursong',0;打开歌曲命令
 
 	commandPlaySong  BYTE "play cursong",0;播放歌曲
 	commandPauseSong BYTE "pause cursong",0;暂停歌曲
 	commandResumeSong BYTE "resume cursong",0;恢复歌曲播放
-	closeSongCommand BYTE "close cursong",0;关闭当前歌曲
+	commandCloseSong BYTE "close cursong",0;关闭当前歌曲
 
 	;当前歌曲信息
 	currentStatus BYTE 0;当前的播放状态
@@ -93,14 +93,14 @@ temp EQU 1000
 
 	;---歌单信息,将其内容写在文件中---
 	;songMenu Song 100 dup(<"1", "1">)
-	songMenu Song <"trans.mp3","src/trans.mp3">,<"Viva.mp3","src/Viva.mp3">,
+	songMenu Song <"trans.mp3","src\\trans.mp3">,<"Viva.mp3","src/Viva.mp3">,
 	 <"霍元甲.mp3","src/霍元甲.mp3">,<"晴天.mp3","src/晴天.mp3">,
-	<"以父之名.mp3","src/以父之名.mp3">,<"天空之城.wav","src/天空之城.wav">
+	<"以父之名.mp3","src/以父之名.mp3">,<"天空之城.wav","src/天空之城.wav">,50 DUP(<>)
 	songMenuSize DWORD 6;歌单大小
 	;---歌单信息---
 
 	;---打开文件对话框---
-	openfilename OPENFILENAME <>
+	openfilename OPENFILENAME <>  ;https://blog.csdn.net/hanxiaoyang123/article/details/83999587
 	szLoadTitle BYTE '选择歌曲', 0
 	szInitDir BYTE '\\', 0
 	szOpenFileNames BYTE 8000 DUP(0)
@@ -111,9 +111,17 @@ temp EQU 1000
 	sep BYTE '\\'
 	szWarningTitle BYTE 'Warning', 0
 	szWarning BYTE '请选择要删除的歌曲', 0
+	printstr BYTE "%s",0
 	;---打开文件对话框---
 
 	guiWorkingDir BYTE 200 DUP(0);GUI主程序的工作路径
 .data?
 	hInstance dword ?
 	mediaCommand BYTE ?; 多媒体控制命令(mciSendString需要附加参数时使用）
+	;importsong中使用
+	;nLen DWORD ?
+	;curOffset DWORD ?
+	;originOffset DWORD ?
+	;curSize DWORD ?
+	;
+

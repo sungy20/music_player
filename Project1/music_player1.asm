@@ -8,34 +8,33 @@ include need.inc
 .code
 
 start:
-    invoke GetModuleHandle, NULL
-    mov hInstance, eax
+    invoke GetModuleHandle, NULL  ;获取已经载入进程空间的模块句柄
+    mov hInstance, eax  ;eax获得了模块句柄
     invoke InitCommonControls
     invoke DialogBoxParam, hInstance, DIALOG, 0, offset dialogProc, 0  
     ;创建dialog,dialogProc为处理dialog消息的逻辑函数
     invoke ExitProcess, eax
 
 dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
-    mov eax, uMsg
+    mov eax, uMsg  ;将事件信息存入eax
 
-    .if eax == WM_INITDIALOG
+    .if eax == WM_INITDIALOG  ;WM_INITDIALOG为初始化窗口
 		invoke init, hWndDlg
-        invoke LoadIcon,hInstance,temp
-        invoke SendMessage,hWndDlg,WM_SETICON,0,eax
-    .elseif eax == WM_COMMAND
+    .elseif eax == WM_COMMAND  ;WM_COMMAND为控件信息
         mov eax,wParam
-        .if eax == CON_PAUSE
+        .if eax == CON_PAUSE  ;暂停/播放键
 			invoke playPause,hWndDlg
-		.elseif eax == IDC_IMPORT_BT;按下导入歌曲键
+		.elseif eax == IDC_IMPORT_BT ;按下导入歌曲键
 			invoke importSong, hWndDlg
-			mov eax, wParam
-		.elseif ax == IDC_SONGMENU;若歌单
+			;mov eax, wParam
+			invoke SetCurrentDirectory, ADDR guiWorkingDir;
+		.elseif eax == IDC_SONGMENU;若歌单
 			shr eax,16
-			.if ax == LBN_SELCHANGE;选中项发生改变
+			.if eax == LBN_SELCHANGE;选中项发生改变
 				invoke SendDlgItemMessage, hWndDlg,IDC_SONGMENU,LB_GETCURSEL,0,0
 				invoke changeSong,hWndDlg,eax;
 			.endif
-		.elseif eax == PRE_SONG
+		.elseif eax == PRE_SONG ;点击前一首歌
 			.if currentSongIndex == 0
 				mov eax, songMenuSize
 				mov currentSongIndex,eax
@@ -52,10 +51,9 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			invoke SendDlgItemMessage,hWndDlg, IDC_SONGMENU, LB_SETCURSEL, currentSongIndex, 0;改变选中项
 			invoke changeSong,hWndDlg,currentSongIndex;播放该首歌曲
         .endif
-    .elseif eax == WM_CLOSE
+    .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口
         invoke EndDialog,hWndDlg,0
     .endif
-
     xor eax,eax
     ret
 dialogProc endp
@@ -65,9 +63,11 @@ dialogProc endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 init proc hWndDlg:DWORD
+	invoke LoadIcon,hInstance,IDI_ERROR
+    invoke SendMessage,hWndDlg,WM_SETICON,0,eax
 	;获取程序工作目录
-	invoke GetCurrentDirectory,200, addr guiWorkingDir
-	;invoke MessageBox,hWndDlg, addr guiWorkingDir, addr guiWorkingDir, MB_OK
+	invoke GetCurrentDirectory,200, addr guiWorkingDir  ;检索当前进程的当前目录。
+	;invoke MessageBox,hWndDlg, addr guiWorkingDir, addr guiWorkingDir, MB_OK  ;弹出一个对话框，用于检查guiworkingdir
 	
 	;展示歌单中的所有歌曲
 	mov esi, offset songMenu
@@ -75,7 +75,8 @@ init proc hWndDlg:DWORD
 	.IF ecx > 0
 		L1:
 			push ecx
-			invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_ADDSTRING, 0, ADDR (Song PTR [esi])._name
+			invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_ADDSTRING, 0, ADDR (Song PTR [esi])._name  
+			;向hwnddlg中的songmenu控件发送消息,LB_ADDSTRING信息表示为menu末尾添加song.name
 			add esi, TYPE songMenu
 			pop ecx
 		loop L1
@@ -99,7 +100,7 @@ playPause proc hWndDlg:DWORD
 
 	.elseif currentStatus == 1;若当前状态为播放状态
 		mov currentStatus, 2;转为暂停状态
-		invoke mciSendString, ADDR closeSongCommand, NULL, 0, NULL;暂停歌曲	
+		invoke mciSendString, ADDR commandPauseSong, NULL, 0, NULL;暂停歌曲	
 		;invoke EndDialog,hWndDlg,0
 		
 	.elseif currentStatus == 2;若当前状态为暂停状态
@@ -117,33 +118,34 @@ playPause endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 importSong proc uses eax ebx esi edi hWndDlg:DWORD
-	LOCAL nLen: DWORD
-	LOCAL curOffset: DWORD
-	LOCAL originOffset: DWORD
-	LOCAL curSize: DWORD
+	LOCAL nLen: DWORD 
+	LOCAL curOffset: DWORD 
+	LOCAL originOffset: DWORD 
+	LOCAL curSize: DWORD 
 	mov al,0
 	mov edi, OFFSET openfilename
 	mov ecx, SIZEOF openfilename
 	cld
 	rep stosb
-	mov openfilename.lStructSize, SIZEOF openfilename
+	mov openfilename.lStructSize, SIZEOF openfilename ;指定结构体的大小，一般用SIZEOF即可
 	mov eax, hWndDlg
-	mov openfilename.hwndOwner, eax
-	mov eax, OFN_ALLOWMULTISELECT
+	mov openfilename.hwndOwner, eax ;指定结构体的父窗口
+	mov eax, OFN_ALLOWMULTISELECT  ;选择多个文件
 	or eax, OFN_EXPLORER
 	mov openfilename.Flags, eax
-	mov openfilename.nMaxFile, nMaxFile
-	mov openfilename.lpstrTitle, OFFSET szLoadTitle
-	mov openfilename.lpstrInitialDir, OFFSET szInitDir
-	mov openfilename.lpstrFile, OFFSET szOpenFileNames
+	mov openfilename.nMaxFile, nMaxFile  ;指定文件名大小
+	mov openfilename.lpstrTitle, OFFSET szLoadTitle  ;对话框的标题
+	mov openfilename.lpstrInitialDir, OFFSET szInitDir  ;打开时的初始目录
+	mov openfilename.lpstrFile, OFFSET szOpenFileNames  ;文件名
 	invoke GetOpenFileName, ADDR openfilename
-	.IF eax == 1
-		invoke lstrcpyn, ADDR szPath, ADDR szOpenFileNames, openfilename.nFileOffset
-		invoke lstrlen, ADDR szPath
-		mov nLen, eax
+	.IF eax == 1  ;选择文件成功
+		;invoke crt_printf, offset printstr, openfilename.lpstrFile
+		invoke lstrcpyn, ADDR szPath, ADDR szOpenFileNames, openfilename.nFileOffset ;将第二个参数复制到第一个参数，长度为第三个参数
+		invoke lstrlen, ADDR szPath ;返回长度
+		mov nLen, eax ;eax的值就是长度
 		mov ebx, eax
 		mov al, szPath[ebx]
-		.IF al != sep
+		.IF al != sep  ;sep在need.inc中
 			mov al, sep
 			mov szPath[ebx], al
 			mov szPath[ebx + 1], 0
@@ -158,18 +160,18 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 		mov originOffset, edi
 		mov esi, OFFSET szOpenFileNames
 		mov eax, 0
-		mov ax, openfilename.nFileOffset
+		mov ax, openfilename.nFileOffset ;nfileoffset指示文件名开始的位置
 		add esi, eax
 		mov al, [esi]
-		.WHILE al != 0
+		.WHILE al != 0  ;该部分为增加songmenu
 			mov szFileName, 0
 			invoke lstrcat, ADDR szFileName, ADDR szPath
 			invoke lstrcat, ADDR szFileName, esi
 			mov edi, curOffset
 			add curOffset, SIZEOF Song
-			invoke lstrcpy, edi, esi
+			invoke lstrcpy, edi, esi  ;song._name
 			add edi, 100
-			invoke lstrcpy, edi, ADDR szFileName
+			invoke lstrcpy, edi, ADDR szFileName  ;song._path
 			invoke lstrlen, esi
 			inc eax
 			add esi, eax
@@ -178,7 +180,7 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 		.ENDW
 		mov esi, originOffset
 		mov ecx, songMenuSize
-		sub ecx, curSize
+		sub ecx, curSize  ;ecx现在拥有添加的歌数
 		.IF ecx > 0
 			L1:
 				push ecx
@@ -197,8 +199,7 @@ importSong endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
-	invoke mciSendString, ADDR closeSongCommand, NULL, 0, NULL;关闭之前的歌曲
-	;invoke closeSong,hWndDlg;关闭之前的歌曲
+	invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL;关闭之前的歌曲
 	;更新当前歌曲的信息
 	mov eax, newSongIndex
 	mov currentSongIndex, eax
@@ -216,14 +217,18 @@ changeSong endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 openSong proc hWndDlg:DWORD, index:DWORD
-	;查找歌曲同级目录下有没有与之同名的lrc文件
+	;LOCAL asd:DWORD;调试用
+	;查找歌曲同级目录下有没有与之同名的lrc文件，即歌词文件
 	;invoke readLrcFile, hWndDlg, index
 	mov eax, index
 	mov ebx, TYPE songMenu
 	mul ebx;此时eax中存储了第index首歌曲相对于songMenu的偏移地址
-	
+	;mov asd, eax ;调试用
+	;invoke crt_printf, ADDR OPENMP3, ADDR songMenu[eax]._path ;调试用
+	;mov eax, asd ;调试用
 	invoke wsprintf, ADDR mediaCommand, ADDR OPENMP3, ADDR songMenu[eax]._path
 	invoke mciSendString, ADDR mediaCommand, NULL, 0, NULL;打开歌曲
+
 
 	Ret
 openSong endp

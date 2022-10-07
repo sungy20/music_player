@@ -29,18 +29,18 @@
 #define IDC_PROGRESS_BAR 1025
 #define DIALOG 1001
 
-recyle ICON DISCARDABLE "D:/CodeStorage/MusicPlayer-master/Image/recycle.ico"
-back ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/back.ico"
-control ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/control.ico"
-forward ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/forward.ico"
-pause ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/pause.ico"
-play ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/play.ico"
-random ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/random.ico"
-loop ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/loop.ico"
-loop1 ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/loop1.ico"
-open_sound ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/open_sound.ico"
-close_sound ICON DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/close_sound.ico"
-cover BITMAP DISCARDABLE "D:/Data/CodeStorage/git storage/music_player/Debug/image/cover.bmp"
+recyle ICON DISCARDABLE "../image/recycle.ico"
+back ICON DISCARDABLE "../image/back.ico"
+control ICON DISCARDABLE "../image/control.ico"
+forward ICON DISCARDABLE "../image/forward.ico"
+pause ICON DISCARDABLE "../image/pause.ico"
+play ICON DISCARDABLE "../image/play.ico"
+random ICON DISCARDABLE "../image/random.ico"
+loop ICON DISCARDABLE "../image/loop.ico"
+loop1 ICON DISCARDABLE "../image/loop1.ico"
+open_sound ICON DISCARDABLE "../image/open_sound.ico"
+close_sound ICON DISCARDABLE "../image/close_sound.ico"
+cover BITMAP DISCARDABLE "../image/cover.bmp"
 
 DIALOG DIALOGEX 0,0,453,284
 CAPTION "“Ù¿÷≤•∑≈∆˜"

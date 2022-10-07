@@ -1,4 +1,4 @@
 ﻿  Assembling music_player1.asm...
-music_player1.asm(61): warning A6004: procedure argument or local not referenced : lParam
-music_player1.asm(229): warning A6004: procedure argument or local not referenced : hWndDlg
-  Project1.vcxproj -> D:\Data\CodeStorage\git storage\music_player\Debug\Project1.exe
+music_player1.asm(59): warning A6004: procedure argument or local not referenced : lParam
+music_player1.asm(234): warning A6004: procedure argument or local not referenced : hWndDlg
+  Project1.vcxproj -> E:\zhuomian\音乐播放器\Debug\Project1.exe

@@ -15,22 +15,32 @@ start:
     ;创建dialog,dialogProc为处理dialog消息的逻辑函数
     invoke ExitProcess, eax
 
+;-------------------------------------------------------------------------------------------------------
+; 处理dialog信息的逻辑函数
+; Receives: hWndDlg是窗口句柄,uMsg、wParam、lParam区分各类信息
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
 dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
     mov eax, uMsg  ;将事件信息存入eax
 
     .if eax == WM_INITDIALOG  ;WM_INITDIALOG为初始化窗口
 		invoke init, hWndDlg
     .elseif eax == WM_COMMAND  ;WM_COMMAND为控件信息
-        mov eax,wParam
-        .if eax == CON_PAUSE  ;暂停/播放键
-			invoke playPause,hWndDlg
-		.elseif eax == IDC_IMPORT_BT ;按下导入歌曲键
+        mov eax, wParam
+		mov ebx, songMenuSize
+		.if eax == IDC_IMPORT_BT ;按下导入歌曲键
 			invoke importSong, hWndDlg
 			;mov eax, wParam
 			invoke SetCurrentDirectory, ADDR guiWorkingDir;
-		.elseif eax == IDC_SONGMENU;若歌单
+		.elseif ebx == 0 ;歌单为空时，下面的操作就没意思了
+			ret
+		.elseif ebx == 0 ;若歌单为空不必进行下面的操作
+			ret
+        .elseif eax == CON_PAUSE  ;暂停/播放键
+			invoke playPause,hWndDlg
+		.elseif ax == IDC_SONGMENU;若歌单
 			shr eax,16
-			.if eax == LBN_SELCHANGE;选中项发生改变
+			.if ax == LBN_DBLCLK;双击歌曲播放
 				invoke SendDlgItemMessage, hWndDlg,IDC_SONGMENU,LB_GETCURSEL,0,0
 				invoke changeSong,hWndDlg,eax;
 			.endif
@@ -50,11 +60,17 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			.endif
 			invoke SendDlgItemMessage,hWndDlg, IDC_SONGMENU, LB_SETCURSEL, currentSongIndex, 0;改变选中项
 			invoke changeSong,hWndDlg,currentSongIndex;播放该首歌曲
+		.elseif eax == IDC_DELETE_BT ;删除选中歌曲
+			invoke SendDlgItemMessage, hWndDlg,IDC_SONGMENU,LB_GETCURSEL,0,0
+			.if eax == -1 ;没选中歌曲
+				ret
+			.endif
+			invoke deleteSong,hWndDlg,eax;
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口
         invoke EndDialog,hWndDlg,0
     .endif
-    xor eax,eax
+    xor eax,eax  ;可以尝试注释，之后会发生有意思的事，嘻嘻
     ret
 dialogProc endp
 ;-------------------------------------------------------------------------------------------------------
@@ -81,8 +97,8 @@ init proc hWndDlg:DWORD
 			pop ecx
 		loop L1
 	.ENDIF
-	
-	Ret
+	invoke SendDlgItemMessage,hWndDlg, IDC_SONGMENU, LB_SETCURSEL, 0, 0 ;将列表选择设置到第一首歌上
+	ret
 init endp
 
 ;-------------------------------------------------------------------------------------------------------
@@ -109,7 +125,7 @@ playPause proc hWndDlg:DWORD
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 		;invoke mciSendString, ADDR commandResumeSong, NULL, 0, NULL;恢复歌曲播放
 	.endif
-	Ret
+	ret
 playPause endp
 
 ;-------------------------------------------------------------------------------------------------------
@@ -207,7 +223,7 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
 	
-	Ret
+	ret
 changeSong endp
 
 ;-------------------------------------------------------------------------------------------------------
@@ -217,20 +233,64 @@ changeSong endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 openSong proc hWndDlg:DWORD, index:DWORD
-	;LOCAL asd:DWORD;调试用
+	LOCAL asd:DWORD;调试用
 	;查找歌曲同级目录下有没有与之同名的lrc文件，即歌词文件
 	;invoke readLrcFile, hWndDlg, index
 	mov eax, index
 	mov ebx, TYPE songMenu
 	mul ebx;此时eax中存储了第index首歌曲相对于songMenu的偏移地址
-	;mov asd, eax ;调试用
-	;invoke crt_printf, ADDR OPENMP3, ADDR songMenu[eax]._path ;调试用
-	;mov eax, asd ;调试用
+	mov asd, eax ;调试用
+	invoke crt_printf, ADDR OPENMP3, ADDR songMenu[eax]._path ;调试用
+	mov eax, asd ;调试用
 	invoke wsprintf, ADDR mediaCommand, ADDR OPENMP3, ADDR songMenu[eax]._path
 	invoke mciSendString, ADDR mediaCommand, NULL, 0, NULL;打开歌曲
 
-
-	Ret
+	ret
 openSong endp
+
+;-------------------------------------------------------------------------------------------------------
+; 删除对应index的歌
+; Receives: index是歌曲在歌单中下标；
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+deleteSong proc hWndDlg:DWORD, index:DWORD
+	LOCAL nextadd :DWORD ;下一首歌的地址
+	mov eax, currentSongIndex
+	inc eax
+	.if eax == songMenuSize
+		mov currentSongIndex, 0
+	.endif
+	dec eax
+	.if eax == index
+		invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL; 若待删除歌曲正在播放
+		mov currentStatus, 0 ;将当前状态设置为停止
+	.endif
+
+	mov esi, OFFSET songMenu
+	mov eax, index
+	mov ebx, SIZEOF Song
+	mul ebx
+	add esi, eax ;到达要删除歌的位置
+	mov nextadd, esi
+	add nextadd, SIZEOF Song
+	mov edi, nextadd ;下一首歌的位置
+	mov ecx, songMenuSize
+	dec ecx
+	.IF ecx > index
+		L1:
+			push ecx
+			invoke lstrcpy, esi, edi  ;song._name
+			add edi, 100
+			add esi, 100
+			invoke lstrcpy, esi, edi  ;song._path
+			add esi, 100
+			add edi, 100
+			pop ecx
+		loop L1
+	.ENDIF
+	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_DELETESTRING, index, 0
+	sub songMenuSize, 1 
+	ret
+deleteSong endp
 
 end start

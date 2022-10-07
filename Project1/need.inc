@@ -29,6 +29,7 @@ playPause PROTO :DWORD
 importSong PROTO :DWORD
 changeSong PROTO :DWORD, :DWORD
 openSong PROTO:DWORD, :DWORD
+deleteSong PROTO:DWORD, :DWORD
 ;歌曲结构体
 Song STRUCT
 	_name BYTE 100 DUP(0);歌曲名
@@ -112,6 +113,7 @@ temp EQU 1000
 	szWarningTitle BYTE 'Warning', 0
 	szWarning BYTE '请选择要删除的歌曲', 0
 	printstr BYTE "%s",0
+	clear BYTE 100 DUP(0)
 	;---打开文件对话框---
 
 	guiWorkingDir BYTE 200 DUP(0);GUI主程序的工作路径

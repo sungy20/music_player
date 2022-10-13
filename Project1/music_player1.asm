@@ -34,8 +34,6 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			invoke SetCurrentDirectory, ADDR guiWorkingDir;
 		.elseif ebx == 0 ;歌单为空时，下面的操作就没意思了
 			ret
-		.elseif ebx == 0 ;若歌单为空不必进行下面的操作
-			ret
         .elseif eax == CON_PAUSE  ;暂停/播放键
 			invoke playPause,hWndDlg
 		.elseif ax == IDC_SONGMENU;若歌单

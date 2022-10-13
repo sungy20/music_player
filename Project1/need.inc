@@ -119,7 +119,7 @@ temp EQU 1000
 	guiWorkingDir BYTE 200 DUP(0);GUI主程序的工作路径
 .data?
 	hInstance dword ?
-	mediaCommand BYTE ?; 多媒体控制命令(mciSendString需要附加参数时使用）
+	mediaCommand BYTE 100 DUP(0); 多媒体控制命令(mciSendString需要附加参数时使用）
 	;importsong中使用
 	;nLen DWORD ?
 	;curOffset DWORD ?

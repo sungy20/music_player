@@ -120,10 +120,4 @@ temp EQU 1000
 .data?
 	hInstance dword ?
 	mediaCommand BYTE 100 DUP(0); 多媒体控制命令(mciSendString需要附加参数时使用）
-	;importsong中使用
-	;nLen DWORD ?
-	;curOffset DWORD ?
-	;originOffset DWORD ?
-	;curSize DWORD ?
-	;
 

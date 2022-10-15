@@ -1,5 +1,5 @@
 ﻿  Assembling music_player1.asm...
 need.inc(122): warning A4014: instructions and initialized data not supported in BSS segments
-music_player1.asm(73): warning A6004: procedure argument or local not referenced : lParam
-music_player1.asm(247): warning A6004: procedure argument or local not referenced : hWndDlg
+music_player1.asm(77): warning A6004: procedure argument or local not referenced : lParam
+music_player1.asm(252): warning A6004: procedure argument or local not referenced : hWndDlg
   Project1.vcxproj -> E:\zhuomian\音乐播放器\Debug\Project1.exe

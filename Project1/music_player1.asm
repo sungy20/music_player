@@ -38,7 +38,11 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			invoke playPause,hWndDlg
 		.elseif ax == IDC_SONGMENU;若歌单
 			shr eax,16
-			.if ax == LBN_DBLCLK;双击歌曲播放
+			.if ax == LBN_SELCHANGE;选中项发生改变
+				invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;则获取被选中的下标
+				mov currentSongIndex, eax
+				mov currentStatus, 0; 将当前状态设为停止，方便播放改变歌曲
+			.elseif ax == LBN_DBLCLK;双击歌曲播放
 				invoke SendDlgItemMessage, hWndDlg,IDC_SONGMENU,LB_GETCURSEL,0,0
 				invoke changeSong,hWndDlg,eax;
 			.endif
@@ -108,6 +112,7 @@ playPause proc hWndDlg:DWORD
 	.if currentStatus == 0;若当前状态为停止状态
 		mov currentStatus, 1;转为播放状态
 		;invoke mciSendString, ADDR OPENMP3, NULL, 0, NULL;打开歌曲
+		invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL ;歌单中某歌曲正播放时，切换下一首歌并且点击播放，需要停止之前的歌曲
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 		;invoke EndDialog,hWndDlg,0

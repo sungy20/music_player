@@ -70,6 +70,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			invoke deleteSong,hWndDlg,eax;
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口
+		invoke saveFile, hWndDlg
         invoke EndDialog,hWndDlg,0
     .endif
     xor eax,eax  ;可以尝试注释，之后会发生有意思的事，嘻嘻
@@ -87,6 +88,7 @@ init proc hWndDlg:DWORD
 	invoke GetCurrentDirectory,200, addr guiWorkingDir  ;检索当前进程的当前目录。
 	;invoke MessageBox,hWndDlg, addr guiWorkingDir, addr guiWorkingDir, MB_OK  ;弹出一个对话框，用于检查guiworkingdir
 	
+	invoke loadFile, hWndDlg
 	;展示歌单中的所有歌曲
 	mov esi, offset songMenu
 	mov ecx, songMenuSize
@@ -295,5 +297,56 @@ deleteSong proc hWndDlg:DWORD, index:DWORD
 	sub songMenuSize, 1 
 	ret
 deleteSong endp
+
+;-------------------------------------------------------------------------------------------------------
+; 读取保存文件中的歌单信息
+; Receives: hWndDlg
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+loadFile proc hWndDlg:DWORD
+	LOCAL songFile: DWORD
+	LOCAL bytesRead: DWORD
+	invoke CreateFile, addr songFileName, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL 
+	mov songFile, eax
+	.if songFile == INVALID_HANDLE_VALUE
+		mov songMenuSize, 0
+	.else
+		invoke ReadFile, songFile, addr songMenuSize, SIZEOF songMenuSize, addr bytesRead, NULL
+		.if bytesRead != SIZEOF songMenuSize
+			mov songMenuSize, 0
+		.else
+			;mov ebx, songMenuSize
+			;mov eax, SIZEOF Song
+			;mul eax
+			invoke ReadFile, songFile, addr songMenu, SIZEOF songMenu, ADDR bytesRead, NULL
+			.IF bytesRead != SIZEOF songMenu
+				mov songMenuSize, 0
+			.ENDIF
+		.ENDIF
+	.ENDIF
+	INVOKE CloseHandle, songFile
+
+	ret
+loadFile endp
+
+;-------------------------------------------------------------------------------------------------------
+; 保存退出前的歌单信息
+; Receives: hWndDlg
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+saveFile proc hWndDlg:DWORD
+	LOCAL songFile: DWORD
+	LOCAL bytesWritten: DWORD
+	INVOKE CreateFile, ADDR songFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
+	mov songFile, eax
+	.IF songFile == INVALID_HANDLE_VALUE
+		ret
+	.ENDIF
+	INVOKE WriteFile, songFile, ADDR songMenuSize, SIZEOF songMenuSize, ADDR bytesWritten, NULL
+	INVOKE WriteFile, songFile, ADDR songMenu, SIZEOF songMenu, ADDR bytesWritten, NULL
+	INVOKE CloseHandle, songFile
+	ret
+saveFile endp
+
 
 end start

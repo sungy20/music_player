@@ -30,6 +30,8 @@ importSong PROTO :DWORD
 changeSong PROTO :DWORD, :DWORD
 openSong PROTO:DWORD, :DWORD
 deleteSong PROTO:DWORD, :DWORD
+loadFile PROTO:DWORD
+saveFile PROTO:DWORD
 ;歌曲结构体
 Song STRUCT
 	_name BYTE 100 DUP(0);歌曲名
@@ -94,10 +96,9 @@ temp EQU 1000
 
 	;---歌单信息,将其内容写在文件中---
 	;songMenu Song 100 dup(<"1", "1">)
-	songMenu Song <"trans.mp3","src\\trans.mp3">,<"Viva.mp3","src/Viva.mp3">,
-	 <"霍元甲.mp3","src/霍元甲.mp3">,<"晴天.mp3","src/晴天.mp3">,
-	<"以父之名.mp3","src/以父之名.mp3">,<"天空之城.wav","src/天空之城.wav">,50 DUP(<>)
-	songMenuSize DWORD 6;歌单大小
+	songMenu Song 50 DUP(<"0","0">)
+	songMenuSize DWORD 0;歌单大小
+	songFileName BYTE "song.dat", 0 ;歌单文件名字
 	;---歌单信息---
 
 	;---打开文件对话框---

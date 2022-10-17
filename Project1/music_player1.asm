@@ -85,6 +85,14 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				ret
 			.endif
 			invoke deleteSong,hWndDlg,eax;
+		.elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
+			;.if hasSound == 1
+			;	mov hasSound, 0
+			;	invoke changeVolume,hWndDlg
+			;.else
+			;	mov hasSound, 1
+			;	invoke changeVolume,hWndDlg
+			;.endif
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口
 		invoke saveFile, hWndDlg
@@ -120,6 +128,17 @@ init proc hWndDlg:DWORD
 	.ENDIF
 	invoke SendDlgItemMessage,hWndDlg, IDC_SONGMENU, LB_SETCURSEL, 0, 0 ;将列表选择设置到第一首歌上
 
+	;初始化播放按钮为暂停状态
+	invoke changePlayButton,hWndDlg, 0
+
+	invoke changeSilenceButton,hWndDlg, 1
+	;加载图标
+	mov eax, 113
+	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	invoke SendDlgItemMessage,hWndDlg,PRE_SONG, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
+	mov eax, 115
+	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	invoke SendDlgItemMessage,hWndDlg,NEXT_SONG, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
 	;初始化音量条,最大范围到sliderLength且值默认为最大值
 	invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETRANGEMIN, 0, 0
 	invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETRANGEMAX, 0, sliderLength
@@ -135,6 +154,7 @@ init endp
 playPause proc hWndDlg:DWORD
 	.if currentStatus == 0;若当前状态为停止状态
 		mov currentStatus, 1;转为播放状态
+		invoke changePlayButton,hWndDlg, 1
 		;invoke mciSendString, ADDR OPENMP3, NULL, 0, NULL;打开歌曲
 		invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL ;歌单中某歌曲正播放时，切换下一首歌并且点击播放，需要停止之前的歌曲
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
@@ -143,11 +163,13 @@ playPause proc hWndDlg:DWORD
 
 	.elseif currentStatus == 1;若当前状态为播放状态
 		mov currentStatus, 2;转为暂停状态
+		invoke changePlayButton,hWndDlg, 0
 		invoke mciSendString, ADDR commandPauseSong, NULL, 0, NULL;暂停歌曲	
 		;invoke EndDialog,hWndDlg,0
 		
 	.elseif currentStatus == 2;若当前状态为暂停状态
 		mov currentStatus, 1;转为播放状态
+		invoke changePlayButton,hWndDlg, 1
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 		;invoke mciSendString, ADDR commandResumeSong, NULL, 0, NULL;恢复歌曲播放
@@ -242,11 +264,13 @@ importSong endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
+	invoke changePlayButton,hWndDlg, 1
 	invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL;关闭之前的歌曲
 	;更新当前歌曲的信息
 	mov eax, newSongIndex
 	mov currentSongIndex, eax
 	mov currentStatus, 1;转为播放状态
+	
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
 	
@@ -379,12 +403,45 @@ changeVolume proc hWndDlg:DWORD
 	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_SLIDER,TBM_GETPOS,0,0;获取游标数值
 	.if hasSound == 1
 		invoke wsprintf, addr mediaCommand, addr commandVolumeChange, eax
+		invoke changeSilenceButton, hWndDlg, 1
 	.else
 		invoke wsprintf, addr mediaCommand, addr commandVolumeChange, 0
+		invoke changeSilenceButton, hWndDlg, 0
 	.endif
+	
 	invoke mciSendString, addr mediaCommand, NULL, 0, NULL
 	ret
 changeVolume endp
 
+;-------------------------------------------------------------------------------------------------------
+; 改变播放按钮
+; Receives: hWndDlg是窗口句柄；playing=1表示接下来播放，=0表示接下来不播放
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+changePlayButton proc hWndDlg:DWORD, playing:BYTE
+	.if playing == 0;转到暂停状态
+		mov eax, 116
+	.else;转到播放状态
+		mov eax, 117
+	.endif
+	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	invoke SendDlgItemMessage,hWndDlg,CON_PAUSE, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
+	Ret
+changePlayButton endp
 
+;-------------------------------------------------------------------------------------------------------
+; 刷新静音按钮的视图显示
+; Receives: hWndDlg是窗口句柄；_hasSound=1表示接下来有声音，=0表示接下来没有声音
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+changeSilenceButton proc hWndDlg:DWORD, _hasSound:BYTE
+	.if _hasSound == 0;转到暂停状态
+		mov eax, close_sound
+	.else;转到播放状态
+		mov eax, open_sound
+	.endif
+	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_BT, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
+	Ret
+changeSilenceButton endp
 end start

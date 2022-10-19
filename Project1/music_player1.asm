@@ -383,14 +383,14 @@ loadFile endp
 saveFile proc hWndDlg:DWORD
 	LOCAL songFile: DWORD
 	LOCAL bytesWritten: DWORD
-	INVOKE CreateFile, ADDR songFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
+	invoke CreateFile, addr songFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
 	mov songFile, eax
-	.IF songFile == INVALID_HANDLE_VALUE
+	.if songFile == INVALID_HANDLE_VALUE
 		ret
-	.ENDIF
-	INVOKE WriteFile, songFile, ADDR songMenuSize, SIZEOF songMenuSize, ADDR bytesWritten, NULL
-	INVOKE WriteFile, songFile, ADDR songMenu, SIZEOF songMenu, ADDR bytesWritten, NULL
-	INVOKE CloseHandle, songFile
+	.endif
+	invoke WriteFile, songFile, addr songMenuSize, SIZEOF songMenuSize, addr bytesWritten, NULL
+	invoke WriteFile, songFile, addr songMenu, SIZEOF songMenu, addr bytesWritten, NULL
+	invoke CloseHandle, songFile
 	ret
 saveFile endp
 

@@ -26,6 +26,7 @@ dialogProc proto arg1:dword,arg2:dword,arg3:dword,arg4:dword
 init PROTO:DWORD
 
 playPause PROTO :DWORD
+searchSong PROTO :DWORD
 importSong PROTO :DWORD
 changeSong PROTO :DWORD, :DWORD
 openSong PROTO:DWORD, :DWORD
@@ -122,7 +123,7 @@ temp EQU 1000
 	szWarningTitle BYTE 'Warning', 0
 	szWarning BYTE '请选择要删除的歌曲', 0
 	printstr BYTE "%s",0
-	clear BYTE 100 DUP(0)
+	songName BYTE 100 DUP(0)  ;记录歌名防止重复导入
 	;---打开文件对话框---
 
 	guiWorkingDir BYTE 200 DUP(0);GUI主程序的工作路径

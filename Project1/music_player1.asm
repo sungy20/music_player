@@ -178,6 +178,27 @@ playPause proc hWndDlg:DWORD
 playPause endp
 
 ;-------------------------------------------------------------------------------------------------------
+; 寻找歌单中是否有搜索歌曲
+; songName是歌曲名称
+; Returns: 找到返回1，否则返回0
+;-------------------------------------------------------------------------------------------------------
+searchSong proc uses esi ecx songNameaddr:DWORD
+	mov esi, offset songMenu
+	mov ecx, songMenuSize
+	.while(ecx > 0)
+		push ecx
+		invoke lstrcmp, esi, songNameaddr
+		pop ecx
+		.if(eax == 0)
+			ret 1
+		.endif
+		add esi, 200
+		dec ecx
+	.endw
+	ret 0
+searchSong endp
+
+;-------------------------------------------------------------------------------------------------------
 ; 导入新的歌曲
 ; hWndDlg是窗口句柄；
 ; Returns: none
@@ -210,7 +231,7 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 		mov nLen, eax ;eax的值就是长度
 		mov ebx, eax
 		mov al, szPath[ebx]
-		.IF al != sep  ;sep在need.inc中
+		.IF al != sep  ;sep在need.inc中，为'\\'，这里是给szpath加一个斜杠
 			mov al, sep
 			mov szPath[ebx], al
 			mov szPath[ebx + 1], 0
@@ -232,15 +253,20 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 			mov szFileName, 0
 			invoke lstrcat, ADDR szFileName, ADDR szPath
 			invoke lstrcat, ADDR szFileName, esi
-			mov edi, curOffset
-			add curOffset, SIZEOF Song
-			invoke lstrcpy, edi, esi  ;song._name
-			add edi, 100
-			invoke lstrcpy, edi, ADDR szFileName  ;song._path
+			invoke lstrcpy, ADDR songName, esi
+			invoke searchSong, ADDR songName
+			.if (eax == 0)
+			.else
+				mov edi, curOffset
+				add curOffset, SIZEOF Song
+				invoke lstrcpy, edi, esi  ;song._name
+				add edi, 100
+				invoke lstrcpy, edi, ADDR szFileName  ;song._path
+				add songMenuSize, 1
+			.endif
 			invoke lstrlen, esi
 			inc eax
 			add esi, eax
-			add songMenuSize, 1
 			mov al, [esi]
 		.ENDW
 		mov esi, originOffset

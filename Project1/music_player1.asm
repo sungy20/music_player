@@ -88,11 +88,18 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 		.elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
 			;.if hasSound == 1
 			;	mov hasSound, 0
-			;	invoke changeVolume,hWndDlg
 			;.else
 			;	mov hasSound, 1
-			;	invoke changeVolume,hWndDlg
 			;.endif
+		.elseif eax == IDC_RECYLE_BT
+			.if recyleWay == 0
+				mov recyleWay, 1
+			.elseif recyleWay == 1
+				mov recyleWay, 2
+			.else 
+				mov recyleWay, 0
+			.endif
+			invoke changeRecyleButton,hWndDlg,recyleWay
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口
 		invoke saveFile, hWndDlg
@@ -132,6 +139,8 @@ init proc hWndDlg:DWORD
 	invoke changePlayButton,hWndDlg, 0
 
 	invoke changeSilenceButton,hWndDlg, 1
+
+	invoke changeRecyleButton,hWndDlg, recyleWay
 	;加载图标
 	mov eax, 113
 	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
@@ -470,4 +479,22 @@ changeSilenceButton proc hWndDlg:DWORD, _hasSound:BYTE
 	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_BT, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
 	Ret
 changeSilenceButton endp
+
+;-------------------------------------------------------------------------------------------------------
+; 刷新静音按钮的视图显示
+; Receives: hWndDlg是窗口句柄；_hasSound=0表示随机，=1表示单曲循环,=2表示列表循环,
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+changeRecyleButton proc hWndDlg:DWORD, _hasSound:WORD
+	.if _hasSound == 0;随机
+		mov eax, random
+	.elseif _hasSound == 1;单曲循环
+		mov eax, loop1
+	.else
+		mov eax, recyle
+	.endif
+	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	invoke SendDlgItemMessage,hWndDlg,IDC_RECYLE_BT, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
+	Ret
+changeRecyleButton endp
 end start

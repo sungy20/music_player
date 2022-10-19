@@ -38,6 +38,7 @@ changeVolume PROTO:DWORD
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE
 changeSilenceButton PROTO :DWORD, :BYTE
+changeRecyleButton PROTO :DWORD, :WORD
 
 ;歌曲结构体
 Song STRUCT
@@ -65,13 +66,14 @@ IDC_PROGRESS_BAR		EQU 1025
 DIALOG		EQU 1001
 IDC_RECYLE_BT		EQU 1014
 
-recyle		EQU 112
+
 back		EQU 113
 control		EQU 114
 forward		EQU 115
 pause0		EQU 116
 play		EQU 117
 random		EQU 118
+recyle		EQU 112
 loop0		EQU 119
 loop1		EQU 120
 open_sound		EQU 121
@@ -134,6 +136,10 @@ temp EQU 1000
 	commandVolumeChange BYTE "setaudio cursong volume to %d",0;音量大小改变
 	sliderLength DWORD 1000
 	;---音量功能---
+
+	;---循环方式---
+	recyleWay WORD 2
+	;---循环方式---
 .data?
 	hInstance dword ?
 	mediaCommand BYTE 100 DUP(0); 多媒体控制命令(mciSendString需要附加参数时使用）

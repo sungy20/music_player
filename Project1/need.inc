@@ -35,6 +35,11 @@ saveFile PROTO:DWORD
 changeVolume PROTO:DWORD
 changeProgressBar PROTO:DWORD
 changeTime PROTO:DWORD
+
+;GUI界面更改
+changePlayButton PROTO :DWORD, :BYTE
+changeSilenceButton PROTO :DWORD, :BYTE
+changeRecyleButton PROTO :DWORD, :WORD
 ;歌曲结构体
 Song STRUCT
 	_name BYTE 100 DUP(0);歌曲名
@@ -53,25 +58,28 @@ IDC_CLEAR_BT		EQU 1011
 IDC_DELETE_BT		EQU 1009
 IDC_IMPORT_BT		EQU 1008
 IDC_SONGMENU		EQU 1026
-recyle		EQU 112
+IDC_VOLUME_SLIDER		EQU 1024
+IDC_COVER_IMAGE		EQU 1019
+IDC_VOLUME_BT		EQU 1018
+IDC_IYRIC		EQU 1020
+IDC_PROGRESS_BAR		EQU 1025
+DIALOG		EQU 1001
 IDC_RECYLE_BT		EQU 1014
+
+
 back		EQU 113
 control		EQU 114
 forward		EQU 115
 pause0		EQU 116
 play		EQU 117
 random		EQU 118
+recyle		EQU 112
 loop0		EQU 119
 loop1		EQU 120
 open_sound		EQU 121
 close_sound		EQU 122
 cover		EQU 123
-IDC_VOLUME_SLIDER		EQU 1024
-IDC_COVER_IMAGE		EQU 1019
-IDC_VOLUME_IMAGE		EQU 1018
-IDC_IYRIC		EQU 1020
-IDC_PROGRESS_BAR		EQU 1025
-DIALOG		EQU 1001
+
 temp EQU 1000
 
 .data
@@ -136,6 +144,10 @@ temp EQU 1000
 	;---进度条功能---
 	ProgressBarDragging BYTE 0;
 	;---进度条功能---
+
+	;---循环方式---
+	recyleWay WORD 2
+	;---循环方式---
 .data?
 	hInstance dword ?
 	mediaCommand BYTE 100 DUP(0); 多媒体控制命令(mciSendString需要附加参数时使用）

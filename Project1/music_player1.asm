@@ -25,6 +25,11 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 
     .if eax == WM_INITDIALOG  ;WM_INITDIALOG为初始化窗口
 		invoke init, hWndDlg
+	.elseif eax == WM_TIMER  ;WM_TIMER为计时器消息
+		.if currentStatus == 1;如果当前正在播放歌曲
+			invoke changeProgressBar, hWndDlg;更改进度条滑块位置
+			invoke repeatMode, hWndDlg  ;根据循环模式决定下一首歌
+		.endif
 	.elseif eax == WM_HSCROLL  ;WM_HSCROLL为滑块消息
 		invoke GetDlgCtrlID,lParam
 			mov curSlider,eax
@@ -40,6 +45,16 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 					.if eax != -1;
 						invoke changeVolume,hWndDlg
 					.endif
+				.endif
+			.elseif curSlider == IDC_PROGRESS_BAR;调节进度
+				.if ax == SB_ENDSCROLL;滚动结束消息
+					mov ProgressBarDragging, 0
+					invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;则获取被选中的下标
+					.if eax != -1;当前有歌曲被选中，则调整进度
+						invoke changeTime, hWndDlg
+					.endif
+				.elseif ax == SB_THUMBTRACK;滚动消息
+					mov ProgressBarDragging, 1
 				.endif
 			.endif
     .elseif eax == WM_COMMAND  ;WM_COMMAND为控件信息
@@ -85,12 +100,12 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				ret
 			.endif
 			invoke deleteSong,hWndDlg,eax;
-		.elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
-			;.if hasSound == 1
-			;	mov hasSound, 0
-			;.else
-			;	mov hasSound, 1
-			;.endif
+        .elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
+			.if hasSound == 1
+				mov hasSound, 0
+			.else
+				mov hasSound, 1
+			.endif
 		.elseif eax == IDC_RECYLE_BT
 			.if recyleWay == 0
 				mov recyleWay, 1
@@ -108,6 +123,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
     xor eax,eax  ;可以尝试注释，之后会发生有意思的事，嘻嘻
     ret
 dialogProc endp
+
 ;-------------------------------------------------------------------------------------------------------
 ; 完成音乐播放器逻辑上的初始化（请把所有初始化工作写在这个函数中）
 ; Receives: hWndDlg是窗口句柄；
@@ -137,10 +153,9 @@ init proc hWndDlg:DWORD
 
 	;初始化播放按钮为暂停状态
 	invoke changePlayButton,hWndDlg, 0
-
 	invoke changeSilenceButton,hWndDlg, 1
-
 	invoke changeRecyleButton,hWndDlg, recyleWay
+
 	;加载图标
 	mov eax, 113
 	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
@@ -148,12 +163,42 @@ init proc hWndDlg:DWORD
 	mov eax, 115
 	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
 	invoke SendDlgItemMessage,hWndDlg,NEXT_SONG, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
+
 	;初始化音量条,最大范围到sliderLength且值默认为最大值
 	invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETRANGEMIN, 0, 0
 	invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETRANGEMAX, 0, sliderLength
 	invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETPOS, 1, sliderLength
+
+	;设置计时器，每0.5s发送一次定时器消息
+	invoke SetTimer, hWndDlg, 1, 500, NULL
+
 	ret
 init endp
+
+;-------------------------------------------------------------------------------------------------------
+;由于库函数缺失，这里直接使用win32API中StrToInt的源码
+;-------------------------------------------------------------------------------------------------------
+StrToInt proc uses esi lpszStr
+  xor esi,esi
+  xor eax,eax
+@@:
+  mov ecx,lpszStr
+  movzx ecx,Byte ptr [ecx+esi]
+  test cl,cl
+  jz @f
+  .if ((cl >= '0') && (cl <= '9'))
+    sub cl,'0'
+    lea eax,[eax+eax*4]
+    lea eax,[ecx+eax*2]
+    inc esi
+    jmp @b
+  .else
+    xor eax,eax
+    ret
+  .endif
+@@:
+  ret
+StrToInt endp
 
 ;-------------------------------------------------------------------------------------------------------
 ; 点击播放/暂停按钮时响应
@@ -168,7 +213,15 @@ playPause proc hWndDlg:DWORD
 		invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL ;歌单中某歌曲正播放时，切换下一首歌并且点击播放，需要停止之前的歌曲
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
+
+		invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
+		invoke StrToInt, addr songLength
+		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
 		;invoke EndDialog,hWndDlg,0
+		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
+		.if eax != -1;当前有歌曲被选中，则发送命令调整音量
+			invoke changeVolume,hWndDlg
+		.endif
 
 	.elseif currentStatus == 1;若当前状态为播放状态
 		mov currentStatus, 2;转为暂停状态
@@ -182,30 +235,10 @@ playPause proc hWndDlg:DWORD
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 		;invoke mciSendString, ADDR commandResumeSong, NULL, 0, NULL;恢复歌曲播放
+		invoke changeVolume,hWndDlg
 	.endif
 	ret
 playPause endp
-
-;-------------------------------------------------------------------------------------------------------
-; 寻找歌单中是否有搜索歌曲
-; songName是歌曲名称
-; Returns: 找到返回1，否则返回0
-;-------------------------------------------------------------------------------------------------------
-searchSong proc uses esi ecx songNameaddr:DWORD
-	mov esi, offset songMenu
-	mov ecx, songMenuSize
-	.while(ecx > 0)
-		push ecx
-		invoke lstrcmp, esi, songNameaddr
-		pop ecx
-		.if(eax == 0)
-			ret 1
-		.endif
-		add esi, 200
-		dec ecx
-	.endw
-	ret 0
-searchSong endp
 
 ;-------------------------------------------------------------------------------------------------------
 ; 导入新的歌曲
@@ -240,7 +273,7 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 		mov nLen, eax ;eax的值就是长度
 		mov ebx, eax
 		mov al, szPath[ebx]
-		.IF al != sep  ;sep在need.inc中，为'\\'，这里是给szpath加一个斜杠
+		.IF al != sep  ;sep在need.inc中
 			mov al, sep
 			mov szPath[ebx], al
 			mov szPath[ebx + 1], 0
@@ -262,20 +295,15 @@ importSong proc uses eax ebx esi edi hWndDlg:DWORD
 			mov szFileName, 0
 			invoke lstrcat, ADDR szFileName, ADDR szPath
 			invoke lstrcat, ADDR szFileName, esi
-			invoke lstrcpy, ADDR songName, esi
-			invoke searchSong, ADDR songName
-			.if (eax == 0)
-			.else
-				mov edi, curOffset
-				add curOffset, SIZEOF Song
-				invoke lstrcpy, edi, esi  ;song._name
-				add edi, 100
-				invoke lstrcpy, edi, ADDR szFileName  ;song._path
-				add songMenuSize, 1
-			.endif
+			mov edi, curOffset
+			add curOffset, SIZEOF Song
+			invoke lstrcpy, edi, esi  ;song._name
+			add edi, 100
+			invoke lstrcpy, edi, ADDR szFileName  ;song._path
 			invoke lstrlen, esi
 			inc eax
 			add esi, eax
+			add songMenuSize, 1
 			mov al, [esi]
 		.ENDW
 		mov esi, originOffset
@@ -305,10 +333,17 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	mov eax, newSongIndex
 	mov currentSongIndex, eax
 	mov currentStatus, 1;转为播放状态
-	
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
+
+	invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
+	invoke StrToInt, addr songLength
+	invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
 	
+	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
+	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
+		invoke changeVolume,hWndDlg
+	.endif
 	ret
 changeSong endp
 
@@ -418,14 +453,14 @@ loadFile endp
 saveFile proc hWndDlg:DWORD
 	LOCAL songFile: DWORD
 	LOCAL bytesWritten: DWORD
-	invoke CreateFile, addr songFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
+	INVOKE CreateFile, ADDR songFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0
 	mov songFile, eax
-	.if songFile == INVALID_HANDLE_VALUE
+	.IF songFile == INVALID_HANDLE_VALUE
 		ret
-	.endif
-	invoke WriteFile, songFile, addr songMenuSize, SIZEOF songMenuSize, addr bytesWritten, NULL
-	invoke WriteFile, songFile, addr songMenu, SIZEOF songMenu, addr bytesWritten, NULL
-	invoke CloseHandle, songFile
+	.ENDIF
+	INVOKE WriteFile, songFile, ADDR songMenuSize, SIZEOF songMenuSize, ADDR bytesWritten, NULL
+	INVOKE WriteFile, songFile, ADDR songMenu, SIZEOF songMenu, ADDR bytesWritten, NULL
+	INVOKE CloseHandle, songFile
 	ret
 saveFile endp
 
@@ -443,10 +478,46 @@ changeVolume proc hWndDlg:DWORD
 		invoke wsprintf, addr mediaCommand, addr commandVolumeChange, 0
 		invoke changeSilenceButton, hWndDlg, 0
 	.endif
-	
 	invoke mciSendString, addr mediaCommand, NULL, 0, NULL
 	ret
 changeVolume endp
+
+;-------------------------------------------------------------------------------------------------------
+; 根据播放进度改变进度条
+; Receives: hWndDlg
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+
+changeProgressBar proc hWndDlg: DWORD
+	local temp2: DWORD
+	.if currentStatus == 1;若当前为播放状态
+		invoke mciSendString, addr commandGetProgress, addr songProgress, 32, NULL;获取当前播放位置
+		invoke StrToInt, addr songProgress;当前进度转成int存在eax里
+		mov temp2, eax
+		.if ProgressBarDragging == 0;若当前用户没在拖时间条那么更新进度条位置
+			invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETPOS, 1, temp2
+		.endif
+	.endif
+	Ret
+changeProgressBar endp
+
+;-------------------------------------------------------------------------------------------------------
+; 根据进度条改变播放进度
+; Receives: hWndDlg
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+changeTime proc hWndDlg: DWORD
+	invoke SendDlgItemMessage,hWndDlg,IDC_PROGRESS_BAR,TBM_GETPOS,0,0;获取当前Slider游标位置
+	invoke wsprintf, addr mediaCommand, addr commandSetProgress, eax
+	invoke mciSendString, addr mediaCommand, NULL, 0, NULL
+	.if currentStatus == 1;
+		invoke mciSendString, addr commandPlaySong, NULL, 0, NULL
+	.elseif currentStatus == 2;
+		invoke mciSendString, addr commandPlaySong, NULL, 0, NULL
+		mov currentStatus, 1;如果拖动进度条，暂停转为播放
+	.endif
+	Ret
+changeTime endp
 
 ;-------------------------------------------------------------------------------------------------------
 ; 改变播放按钮
@@ -497,4 +568,23 @@ changeRecyleButton proc hWndDlg:DWORD, _hasSound:WORD
 	invoke SendDlgItemMessage,hWndDlg,IDC_RECYLE_BT, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
 	Ret
 changeRecyleButton endp
+
+repeatMode proc hWndDlg:DWORD
+	LOCAL temp:DWORD
+	.if currentStatus == 1  ;当前状态为播放
+		invoke StrToInt, addr songLength
+		mov temp, eax
+		invoke StrToInt, addr songProgress
+		.if eax >= temp;播放完了
+			.if recyleWay == 1;单曲循环
+				invoke mciSendString, addr commandSetStart, NULL, 0, NULL;定位到歌曲开头
+				invoke mciSendString, addr commandPlaySong, NULL, 0, NULL
+			.elseif recyleWay == 2;列表循环
+				invoke SendMessage, hWndDlg, WM_COMMAND, NEXT_SONG, 0;发送消息，模拟点击了"下一首"按钮
+			.endif
+		.endif
+	.endif
+	ret
+repeatMode endp
+
 end start

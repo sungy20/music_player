@@ -7,9 +7,9 @@ include		comdlg32.inc
 include		msvcrt.inc
 include 	shlwapi.inc
 include 	msvcrt.inc
-include		gdi32.inc
-include		gdiplus.inc
-include		wsock32.inc
+include gdi32.inc
+include gdiplus.inc
+include wsock32.inc
 
 includelib  kernel32.lib
 includelib  user32.lib
@@ -26,7 +26,6 @@ dialogProc proto arg1:dword,arg2:dword,arg3:dword,arg4:dword
 init PROTO:DWORD
 
 playPause PROTO :DWORD
-searchSong PROTO :DWORD
 importSong PROTO :DWORD
 changeSong PROTO :DWORD, :DWORD
 openSong PROTO:DWORD, :DWORD
@@ -34,12 +33,14 @@ deleteSong PROTO:DWORD, :DWORD
 loadFile PROTO:DWORD
 saveFile PROTO:DWORD
 changeVolume PROTO:DWORD
+changeProgressBar PROTO:DWORD
+changeTime PROTO:DWORD
+repeatMode PROTO:DWORD
 
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE
 changeSilenceButton PROTO :DWORD, :BYTE
 changeRecyleButton PROTO :DWORD, :WORD
-
 ;歌曲结构体
 Song STRUCT
 	_name BYTE 100 DUP(0);歌曲名
@@ -65,6 +66,7 @@ IDC_IYRIC		EQU 1020
 IDC_PROGRESS_BAR		EQU 1025
 DIALOG		EQU 1001
 IDC_RECYLE_BT		EQU 1014
+IDC_PROGRESS_TEXT EQU 1030
 
 
 back		EQU 113
@@ -80,7 +82,6 @@ open_sound		EQU 121
 close_sound		EQU 122
 cover		EQU 123
 
-temp EQU 1000
 
 .data
 
@@ -91,6 +92,10 @@ temp EQU 1000
 	commandPauseSong BYTE "pause cursong",0;暂停歌曲
 	commandResumeSong BYTE "resume cursong",0;恢复歌曲播放
 	commandCloseSong BYTE "close cursong",0;关闭当前歌曲
+	commandGetProgress BYTE "status cursong position", 0;获取歌曲进度条位置
+	commandSetProgress BYTE "seek cursong to %d", 0;设置歌曲当前播放位置命令
+	commandGetLength BYTE "status cursong length", 0;获取歌曲长度命令
+	commandSetStart BYTE "seek curSong to start", 0;设置歌曲当前播放位置到开头
 
 	;当前歌曲信息
 	currentStatus BYTE 0;当前的播放状态
@@ -100,6 +105,7 @@ temp EQU 1000
 	currentSongIndex DWORD 0;当前歌曲在歌单中的下标
 
 	songLength BYTE 32 dup(0);当前歌曲长度（单位：毫秒）
+	songProgress BYTE 32 dup(0);当前播放进度（单位：毫秒）
 	timeScale DWORD 1000;秒和毫秒进制
 	timeScaleSec DWORD 60;秒和分钟进制
 	timeMinuteLength DWORD 0;当前歌曲进度（分钟取整）
@@ -125,7 +131,7 @@ temp EQU 1000
 	szWarningTitle BYTE 'Warning', 0
 	szWarning BYTE '请选择要删除的歌曲', 0
 	printstr BYTE "%s",0
-	songName BYTE 100 DUP(0)  ;记录歌名防止重复导入
+	clear BYTE 100 DUP(0)
 	;---打开文件对话框---
 
 	guiWorkingDir BYTE 200 DUP(0);GUI主程序的工作路径
@@ -136,6 +142,10 @@ temp EQU 1000
 	commandVolumeChange BYTE "setaudio cursong volume to %d",0;音量大小改变
 	sliderLength DWORD 1000
 	;---音量功能---
+
+	;---进度条功能---
+	ProgressBarDragging BYTE 0;
+	;---进度条功能---
 
 	;---循环方式---
 	recyleWay WORD 2

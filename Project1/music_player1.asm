@@ -100,11 +100,11 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			.endif
 			invoke deleteSong,hWndDlg,eax;
         .elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
-			;.if hasSound == 1
-			;	mov hasSound, 0
-			;.else
-			;	mov hasSound, 1
-			;.endif
+			.if hasSound == 1
+				mov hasSound, 0
+			.else
+				mov hasSound, 1
+			.endif
 		.elseif eax == IDC_RECYLE_BT
 			.if recyleWay == 0
 				mov recyleWay, 1
@@ -217,6 +217,10 @@ playPause proc hWndDlg:DWORD
 		invoke StrToInt, addr songLength
 		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
 		;invoke EndDialog,hWndDlg,0
+		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
+		.if eax != -1;当前有歌曲被选中，则发送命令调整音量
+			invoke changeVolume,hWndDlg
+		.endif
 
 	.elseif currentStatus == 1;若当前状态为播放状态
 		mov currentStatus, 2;转为暂停状态
@@ -230,6 +234,7 @@ playPause proc hWndDlg:DWORD
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 		;invoke mciSendString, ADDR commandResumeSong, NULL, 0, NULL;恢复歌曲播放
+		invoke changeVolume,hWndDlg
 	.endif
 	ret
 playPause endp
@@ -334,6 +339,11 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	invoke StrToInt, addr songLength
 	invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
 	
+	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
+	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
+		invoke changeVolume,hWndDlg
+	.endif
+
 	ret
 changeSong endp
 

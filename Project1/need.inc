@@ -37,6 +37,7 @@ changeProgressBar PROTO:DWORD
 changeTime PROTO:DWORD
 repeatMode PROTO:DWORD
 silenceSwitch PROTO:DWORD
+clearSongMenu PROTO:DWORD
 
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE

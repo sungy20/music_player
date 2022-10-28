@@ -102,7 +102,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				ret
 			.endif
 			invoke deleteSong,hWndDlg,eax;
-        .elseif eax == IDC_VOLUME_BT ;¾²Òô°´Å¥@hemu,¾²ÒôÇÐ»»¿¿ÄãÀ´ÊµÏÖ¿©
+        .elseif eax == IDC_VOLUME_BT ;¾²Òô°´Å¥
 			.if hasSound == 1
 				mov hasSound, 0
 			.else
@@ -117,6 +117,8 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				mov recyleWay, 0
 			.endif
 			invoke changeRecyleButton,hWndDlg,recyleWay
+		.elseif eax == IDC_CLEAR_BT
+			invoke clearSongMenu, hWndDlg
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSEÎª¹Ø±Õ´°¿Ú
 		invoke saveFile, hWndDlg
@@ -606,5 +608,17 @@ silenceSwitch proc hWndDlg:DWORD
 	invoke changeVolume,hWndDlg
 	ret
 silenceSwitch endp
+
+clearSongMenu proc hWndDlg:DWORD
+	invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL; Í£Ö¹¸èÇú²¥·Å
+	mov currentStatus, 0 ;½«µ±Ç°×´Ì¬ÉèÖÃÎªÍ£Ö¹
+	.while songMenuSize > 0
+		mov eax, songMenuSize
+		dec eax
+		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_DELETESTRING, eax, 0
+		sub songMenuSize, 1 
+	.endw
+	ret
+clearSongMenu endp
 
 end start

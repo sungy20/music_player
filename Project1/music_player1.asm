@@ -68,6 +68,8 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			ret
         .elseif eax == CON_PAUSE  ;暂停/播放键
 			invoke playPause,hWndDlg
+		.elseif eax == IDC_VOLUME_BT ;静音键
+			invoke silenceSwitch,hWndDlg
 		.elseif ax == IDC_SONGMENU;若歌单
 			shr eax,16
 			.if ax == LBN_SELCHANGE;选中项发生改变
@@ -552,7 +554,7 @@ changeSilenceButton proc hWndDlg:DWORD, _hasSound:BYTE
 changeSilenceButton endp
 
 ;-------------------------------------------------------------------------------------------------------
-; 刷新静音按钮的视图显示
+; 刷新播放方式按钮的视图显示
 ; Receives: hWndDlg是窗口句柄；_hasSound=0表示随机，=1表示单曲循环,=2表示列表循环,
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
@@ -569,6 +571,11 @@ changeRecyleButton proc hWndDlg:DWORD, _hasSound:WORD
 	Ret
 changeRecyleButton endp
 
+;-------------------------------------------------------------------------------------------------------
+; 根据循环模式决定下一首歌
+; Receives: hWndDlg是窗口句柄；
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
 repeatMode proc hWndDlg:DWORD
 	LOCAL temp:DWORD
 	.if currentStatus == 1  ;当前状态为播放
@@ -586,5 +593,18 @@ repeatMode proc hWndDlg:DWORD
 	.endif
 	ret
 repeatMode endp
+
+;-------------------------------------------------------------------------------------------------------
+; 点击静音按钮
+; Receives: hWndDlg是窗口句柄
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+silenceSwitch proc hWndDlg:DWORD
+	mov al, hasSound
+	not al
+	mov hasSound, al
+	invoke changeVolume,hWndDlg
+	ret
+silenceSwitch endp
 
 end start

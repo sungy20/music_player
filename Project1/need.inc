@@ -36,6 +36,7 @@ changeVolume PROTO:DWORD
 changeProgressBar PROTO:DWORD
 changeTime PROTO:DWORD
 silenceSwitch PROTO:DWORD
+calTime PROTO
 
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE
@@ -66,7 +67,8 @@ IDC_IYRIC		EQU 1020
 IDC_PROGRESS_BAR		EQU 1025
 DIALOG		EQU 1001
 IDC_RECYLE_BT		EQU 1014
-
+SONG_PROGRESS_EDIT	EQU 1029
+SONG_LENGTH_EDIT	EQU 1030
 
 back		EQU 113
 control		EQU 114
@@ -144,6 +146,8 @@ temp EQU 1000
 
 	;---进度条功能---
 	ProgressBarDragging BYTE 0;
+	TimeFormat BYTE "%d:%d", 0;
+	TimeShown BYTE 100 DUP(0);
 	;---进度条功能---
 
 	;---循环方式---

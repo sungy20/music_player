@@ -101,7 +101,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				ret
 			.endif
 			invoke deleteSong,hWndDlg,eax;
-        .elseif eax == IDC_VOLUME_BT ;静音按钮@hemu,静音切换靠你来实现咯
+        .elseif eax == IDC_VOLUME_BT ;静音按钮
 			.if hasSound == 1
 				mov hasSound, 0
 			.else
@@ -215,9 +215,19 @@ playPause proc hWndDlg:DWORD
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 
+		push eax
 		invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
 		invoke StrToInt, addr songLength
+		push eax
 		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+		pop eax
+		push edx
+		invoke calTime
+		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		pop edx
+		pop eax
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
+
 		;invoke EndDialog,hWndDlg,0
 		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 		.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -337,9 +347,18 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
 
-	invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
-	invoke StrToInt, addr songLength
-	invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+		push eax
+		invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
+		invoke StrToInt, addr songLength
+		push eax
+		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+		pop eax
+		push edx
+		invoke calTime
+		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		pop edx
+		pop eax
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
 	
 	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -583,5 +602,20 @@ silenceSwitch proc hWndDlg:DWORD
 	invoke changeVolume,hWndDlg
 	ret
 silenceSwitch endp
+
+;-------------------------------------------------------------------------------------------------------
+; 计算歌曲分秒，分别存入eax和edx(输入储存在eax中，单位是毫秒)
+; Receives: none
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+calTime proc uses ecx
+	mov edx, 0
+	mov ecx, 1000
+	div ecx
+	mov edx, 0
+	mov ecx, 60
+	div ecx
+	ret
+calTime endp
 
 end start

@@ -108,7 +108,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 			.else
 				mov hasSound, 1
 			.endif
-		.elseif eax == IDC_RECYLE_BT
+		.elseif eax == IDC_RECYLE_BT ;循环按钮
 			.if recyleWay == 0
 				mov recyleWay, 1
 			.elseif recyleWay == 1
@@ -117,7 +117,7 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				mov recyleWay, 0
 			.endif
 			invoke changeRecyleButton,hWndDlg,recyleWay
-		.elseif eax == IDC_CLEAR_BT
+		.elseif eax == IDC_CLEAR_BT  ;清空列表
 			invoke clearSongMenu, hWndDlg
         .endif
     .elseif eax == WM_CLOSE  ;WM_CLOSE为关闭窗口

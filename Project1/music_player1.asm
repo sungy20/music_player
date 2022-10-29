@@ -224,9 +224,9 @@ playPause proc hWndDlg:DWORD
 		push edx
 		invoke calTime
 		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
 		pop edx
 		pop eax
-		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
 
 		;invoke EndDialog,hWndDlg,0
 		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
@@ -356,9 +356,9 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 		push edx
 		invoke calTime
 		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
 		pop edx
 		pop eax
-		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
 	
 	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -515,6 +515,14 @@ changeProgressBar proc hWndDlg: DWORD
 		invoke mciSendString, addr commandGetProgress, addr songProgress, 32, NULL;获取当前播放位置
 		invoke StrToInt, addr songProgress;当前进度转成int存在eax里
 		mov temp2, eax
+		push eax
+		push edx
+		mov al, songProgress
+		invoke calTime
+		invoke wsprintf, addr ProgressShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_PROGRESS_EDIT,addr ProgressShown
+		pop edx
+		pop eax
 		.if ProgressBarDragging == 0;若当前用户没在拖时间条那么更新进度条位置
 			invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETPOS, 1, temp2
 		.endif

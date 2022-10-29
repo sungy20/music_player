@@ -148,6 +148,7 @@ temp EQU 1000
 	ProgressBarDragging BYTE 0;
 	TimeFormat BYTE "%d:%d", 0;
 	TimeShown BYTE 100 DUP(0);
+	ProgressShown BYTE 100 DUP(0);
 	;---进度条功能---
 
 	;---循环方式---

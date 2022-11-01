@@ -218,9 +218,19 @@ playPause proc hWndDlg:DWORD
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 
+		push eax
 		invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
 		invoke StrToInt, addr songLength
+		push eax
 		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+		pop eax
+		push edx
+		invoke calTime
+		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
+		pop edx
+		pop eax
+
 		;invoke EndDialog,hWndDlg,0
 		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 		.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -340,9 +350,18 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
 
+	push eax
 	invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
 	invoke StrToInt, addr songLength
+	push eax
 	invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+	pop eax
+	push edx
+	invoke calTime
+	invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+	invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
+	pop edx
+	pop eax
 	
 	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -498,6 +517,14 @@ changeProgressBar proc hWndDlg: DWORD
 		invoke mciSendString, addr commandGetProgress, addr songProgress, 32, NULL;获取当前播放位置
 		invoke StrToInt, addr songProgress;当前进度转成int存在eax里
 		mov temp2, eax
+		push eax
+		push edx
+		mov al, songProgress
+		invoke calTime
+		invoke wsprintf, addr ProgressShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_PROGRESS_EDIT,addr ProgressShown
+		pop edx
+		pop eax
 		.if ProgressBarDragging == 0;若当前用户没在拖时间条那么更新进度条位置
 			invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETPOS, 1, temp2
 		.endif
@@ -609,6 +636,26 @@ silenceSwitch proc hWndDlg:DWORD
 	ret
 silenceSwitch endp
 
+;-------------------------------------------------------------------------------------------------------
+; 计算歌曲分秒，分别存入eax和edx(输入储存在eax中，单位是毫秒)
+; Receives: none
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+calTime proc uses ecx
+	mov edx, 0
+	mov ecx, 1000
+	div ecx
+	mov edx, 0
+	mov ecx, 60
+	div ecx
+	ret
+calTime endp
+
+;-------------------------------------------------------------------------------------------------------
+; 清空歌单
+; Receives: hWndDlg是窗口句柄
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
 clearSongMenu proc hWndDlg:DWORD
 	invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL; 停止歌曲播放
 	mov currentStatus, 0 ;将当前状态设置为停止

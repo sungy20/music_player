@@ -42,7 +42,7 @@ clearSongMenu PROTO:DWORD
 
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE
-changeSilenceButton PROTO :DWORD, :BYTE
+changeSilenceButton PROTO :DWORD, :WORD
 changeRecyleButton PROTO :DWORD, :WORD
 ;歌曲结构体
 Song STRUCT
@@ -85,7 +85,7 @@ loop1		EQU 120
 open_sound		EQU 121
 close_sound		EQU 122
 cover		EQU 123
-
+big_sound		EQU 124
 
 .data
 
@@ -144,6 +144,7 @@ cover		EQU 123
 	curSlider DWORD ?;当前产生事件的进度条
 	hasSound BYTE 1
 	commandVolumeChange BYTE "setaudio cursong volume to %d",0;音量大小改变
+	testVolumeChange BYTE "setaudio cursong volume to [%d]",0;音量大小改变
 	sliderLength DWORD 1000
 	;---音量功能---
 

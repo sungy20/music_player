@@ -102,12 +102,6 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				ret
 			.endif
 			invoke deleteSong,hWndDlg,eax;
-        .elseif eax == IDC_VOLUME_BT ;静音按钮
-			.if hasSound == 1
-				mov hasSound, 0
-			.else
-				mov hasSound, 1
-			.endif
 		.elseif eax == IDC_RECYLE_BT ;循环按钮
 			.if recyleWay == 1
 				mov recyleWay, 2
@@ -632,10 +626,13 @@ repeatMode endp
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
 silenceSwitch proc hWndDlg:DWORD
-	mov al, hasSound
-	not al
-	mov hasSound, al
-	invoke changeVolume,hWndDlg
+	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_SLIDER,TBM_GETPOS,0,0;获取游标数值
+	.if eax == 0
+		invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETPOS, 1, 1000
+	.else
+		invoke SendDlgItemMessage, hWndDlg, IDC_VOLUME_SLIDER, TBM_SETPOS, 1, 0
+	.endif
+	invoke changeVolume, hWndDlg
 	ret
 silenceSwitch endp
 

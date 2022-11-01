@@ -109,12 +109,10 @@ dialogProc proc hWndDlg:DWORD, uMsg:DWORD, wParam:DWORD, lParam:DWORD
 				mov hasSound, 1
 			.endif
 		.elseif eax == IDC_RECYLE_BT ;循环按钮
-			.if recyleWay == 0
-				mov recyleWay, 1
-			.elseif recyleWay == 1
+			.if recyleWay == 1
 				mov recyleWay, 2
 			.else 
-				mov recyleWay, 0
+				mov recyleWay, 1
 			.endif
 			invoke changeRecyleButton,hWndDlg,recyleWay
 		.elseif eax == IDC_CLEAR_BT  ;清空列表
@@ -157,7 +155,7 @@ init proc hWndDlg:DWORD
 
 	;初始化播放按钮为暂停状态
 	invoke changePlayButton,hWndDlg, 0
-	invoke changeSilenceButton,hWndDlg, 1
+	invoke changeSilenceButton,hWndDlg, 1000
 	invoke changeRecyleButton,hWndDlg, recyleWay
 
 	;加载图标
@@ -218,9 +216,19 @@ playPause proc hWndDlg:DWORD
 		invoke openSong,hWndDlg, currentSongIndex;打开歌曲
 		invoke mciSendString,ADDR commandPlaySong,NULL,0,NULL;播放歌曲
 
+		push eax
 		invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
 		invoke StrToInt, addr songLength
+		push eax
 		invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+		pop eax
+		push edx
+		invoke calTime
+		invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
+		pop edx
+		pop eax
+
 		;invoke EndDialog,hWndDlg,0
 		invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 		.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -340,9 +348,18 @@ changeSong proc hWndDlg:DWORD, newSongIndex: DWORD
 	invoke openSong,hWndDlg, currentSongIndex;打开新的歌曲
 	invoke mciSendString, ADDR commandPlaySong, NULL, 0, NULL;播放歌曲
 
+	push eax
 	invoke mciSendString, addr commandGetLength, addr songLength, 32, NULL;获取歌曲长度
 	invoke StrToInt, addr songLength
+	push eax
 	invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETRANGEMAX, 0, eax;把进度条改成跟歌曲长度一样长
+	pop eax
+	push edx
+	invoke calTime
+	invoke wsprintf, addr TimeShown, addr TimeFormat, eax, edx
+	invoke SetDlgItemText,hWndDlg,SONG_LENGTH_EDIT,addr TimeShown
+	pop edx
+	pop eax
 	
 	invoke SendDlgItemMessage, hWndDlg, IDC_SONGMENU, LB_GETCURSEL, 0, 0;获取被选中的下标
 	.if eax != -1;当前有歌曲被选中，则发送命令调整音量
@@ -365,7 +382,7 @@ openSong proc hWndDlg:DWORD, index:DWORD
 	mov ebx, TYPE songMenu
 	mul ebx;此时eax中存储了第index首歌曲相对于songMenu的偏移地址
 	mov asd, eax ;调试用
-	invoke crt_printf, ADDR OPENMP3, ADDR songMenu[eax]._path ;调试用
+	;invoke crt_printf, ADDR OPENMP3, ADDR songMenu[eax]._path ;调试用
 	mov eax, asd ;调试用
 	invoke wsprintf, ADDR mediaCommand, ADDR OPENMP3, ADDR songMenu[eax]._path
 	invoke mciSendString, ADDR mediaCommand, NULL, 0, NULL;打开歌曲
@@ -475,13 +492,13 @@ saveFile endp
 ;-------------------------------------------------------------------------------------------------------
 changeVolume proc hWndDlg:DWORD
 	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_SLIDER,TBM_GETPOS,0,0;获取游标数值
-	.if hasSound == 1
-		invoke wsprintf, addr mediaCommand, addr commandVolumeChange, eax
-		invoke changeSilenceButton, hWndDlg, 1
-	.else
-		invoke wsprintf, addr mediaCommand, addr commandVolumeChange, 0
-		invoke changeSilenceButton, hWndDlg, 0
-	.endif
+	;push eax
+	;invoke crt_printf, ADDR testVolumeChange, eax ;调试用
+	;pop eax
+	push eax
+	invoke wsprintf, addr mediaCommand, addr commandVolumeChange, eax
+	pop eax
+	invoke changeSilenceButton, hWndDlg, ax
 	invoke mciSendString, addr mediaCommand, NULL, 0, NULL
 	ret
 changeVolume endp
@@ -498,6 +515,14 @@ changeProgressBar proc hWndDlg: DWORD
 		invoke mciSendString, addr commandGetProgress, addr songProgress, 32, NULL;获取当前播放位置
 		invoke StrToInt, addr songProgress;当前进度转成int存在eax里
 		mov temp2, eax
+		push eax
+		push edx
+		mov al, songProgress
+		invoke calTime
+		invoke wsprintf, addr ProgressShown, addr TimeFormat, eax, edx
+		invoke SetDlgItemText,hWndDlg,SONG_PROGRESS_EDIT,addr ProgressShown
+		pop edx
+		pop eax
 		.if ProgressBarDragging == 0;若当前用户没在拖时间条那么更新进度条位置
 			invoke SendDlgItemMessage, hWndDlg, IDC_PROGRESS_BAR, TBM_SETPOS, 1, temp2
 		.endif
@@ -540,17 +565,22 @@ changePlayButton proc hWndDlg:DWORD, playing:BYTE
 changePlayButton endp
 
 ;-------------------------------------------------------------------------------------------------------
-; 刷新静音按钮的视图显示
-; Receives: hWndDlg是窗口句柄；_hasSound=1表示接下来有声音，=0表示接下来没有声音
+; 刷新音量按钮的视图显示
+; Receives: hWndDlg是窗口句柄；_hasSound表示音量，范围是【0，1000】
 ; Returns: none
 ;-------------------------------------------------------------------------------------------------------
-changeSilenceButton proc hWndDlg:DWORD, _hasSound:BYTE
+changeSilenceButton proc hWndDlg:DWORD, _hasSound:WORD
 	.if _hasSound == 0;转到暂停状态
 		mov eax, close_sound
-	.else;转到播放状态
+		invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	.elseif _hasSound > 500;音量大
+		mov eax, big_sound
+		invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	.else;音量小
 		mov eax, open_sound
+		invoke LoadImage, hInstance, eax,IMAGE_ICON,29,29,NULL
 	.endif
-	invoke LoadImage, hInstance, eax,IMAGE_ICON,32,32,NULL
+	
 	invoke SendDlgItemMessage,hWndDlg,IDC_VOLUME_BT, BM_SETIMAGE, IMAGE_ICON, eax;修改按钮
 	Ret
 changeSilenceButton endp
@@ -609,6 +639,26 @@ silenceSwitch proc hWndDlg:DWORD
 	ret
 silenceSwitch endp
 
+;-------------------------------------------------------------------------------------------------------
+; 计算歌曲分秒，分别存入eax和edx(输入储存在eax中，单位是毫秒)
+; Receives: none
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
+calTime proc uses ecx
+	mov edx, 0
+	mov ecx, 1000
+	div ecx
+	mov edx, 0
+	mov ecx, 60
+	div ecx
+	ret
+calTime endp
+
+;-------------------------------------------------------------------------------------------------------
+; 清空歌单
+; Receives: hWndDlg是窗口句柄
+; Returns: none
+;-------------------------------------------------------------------------------------------------------
 clearSongMenu proc hWndDlg:DWORD
 	invoke mciSendString, ADDR commandCloseSong, NULL, 0, NULL; 停止歌曲播放
 	mov currentStatus, 0 ;将当前状态设置为停止

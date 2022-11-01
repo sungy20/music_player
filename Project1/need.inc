@@ -37,11 +37,12 @@ changeProgressBar PROTO:DWORD
 changeTime PROTO:DWORD
 repeatMode PROTO:DWORD
 silenceSwitch PROTO:DWORD
+calTime PROTO
 clearSongMenu PROTO:DWORD
 
 ;GUI界面更改
 changePlayButton PROTO :DWORD, :BYTE
-changeSilenceButton PROTO :DWORD, :BYTE
+changeSilenceButton PROTO :DWORD, :WORD
 changeRecyleButton PROTO :DWORD, :WORD
 ;歌曲结构体
 Song STRUCT
@@ -68,7 +69,8 @@ IDC_IYRIC		EQU 1020
 IDC_PROGRESS_BAR		EQU 1025
 DIALOG		EQU 1001
 IDC_RECYLE_BT		EQU 1014
-IDC_PROGRESS_TEXT EQU 1030
+SONG_PROGRESS_EDIT	EQU 1029
+SONG_LENGTH_EDIT	EQU 1030
 
 
 back		EQU 113
@@ -83,7 +85,7 @@ loop1		EQU 120
 open_sound		EQU 121
 close_sound		EQU 122
 cover		EQU 123
-
+big_sound		EQU 124
 
 .data
 
@@ -142,11 +144,15 @@ cover		EQU 123
 	curSlider DWORD ?;当前产生事件的进度条
 	hasSound BYTE 1
 	commandVolumeChange BYTE "setaudio cursong volume to %d",0;音量大小改变
+	testVolumeChange BYTE "setaudio cursong volume to [%d]",0;音量大小改变
 	sliderLength DWORD 1000
 	;---音量功能---
 
 	;---进度条功能---
 	ProgressBarDragging BYTE 0;
+	TimeFormat BYTE "%02d:%02d", 0;
+	TimeShown BYTE 100 DUP(0);
+	ProgressShown BYTE 100 DUP(0);
 	;---进度条功能---
 
 	;---循环方式---
